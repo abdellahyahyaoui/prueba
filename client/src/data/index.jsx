@@ -2,7 +2,7 @@ import axios from "axios";
 
 export const getProducts = async () => {
   const products = await axios.get(
-    "http://127.0.0.1:5000/api/productos"
+    "https://prueba-1-1qb5.onrender.com/api/productos"
   );
   return products;
 };

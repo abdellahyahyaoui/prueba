@@ -1,21 +1,22 @@
 from flask import Flask, jsonify
+from flask_cors import CORS  # Importa CORS
 import psycopg2
-import os
-from dotenv import load_dotenv
-
-# Cargar variables de entorno desde el archivo .env
-load_dotenv()
 
 app = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": "*"}})  # Habilita CORS para todas las rutas de la API
 
 @app.route('/api/productos', methods=['GET'])
 def obtener_productos():
     try:
-        # Conectar a la base de datos utilizando la variable de entorno DATABASE_URL
-        conn = psycopg2.connect(os.getenv("DATABASE_URL"))
+        conn = psycopg2.connect(
+            dbname="ecommerce_ikfq",
+            user="ecommerce_ikfq_user",
+            password="Tdkv6RKytsf5d1pACeRJicF8tG2Ec2ON",
+            host="dpg-crq0213v2p9s738di0j0-a.frankfurt-postgres.render.com",
+            port="5432"
+        )
         cur = conn.cursor()
 
-        # Consultar la tabla
         cur.execute("""
             SELECT 
                 id, 
