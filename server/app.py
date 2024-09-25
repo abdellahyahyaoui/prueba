@@ -1,24 +1,33 @@
+import os
+from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from flask_mysqldb import MySQL
 from flask_cors import CORS
 import MySQLdb.cursors
 import stripe
 
+# Cargar las variables desde el archivo .env
+load_dotenv()
+
+# Verificar que las variables de entorno se han cargado correctamente
+print("MYSQL_USER:", os.environ.get('MYSQL_USER'))
+print("MYSQL_PASSWORD:", os.environ.get('MYSQL_PASSWORD'))
+
 app = Flask(__name__)
 
 # Habilita CORS para permitir solicitudes desde otros dominios
 CORS(app)
 
-# Configuración de MySQL
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'abdellah'
-app.config['MYSQL_PASSWORD'] = 'x3991491w'
-app.config['MYSQL_DB'] = 'ecommerce'
+# Configuración de MySQL desde las variables de entorno
+app.config['MYSQL_HOST'] = os.environ.get('MYSQL_HOST')
+app.config['MYSQL_USER'] = os.environ.get('MYSQL_USER')
+app.config['MYSQL_PASSWORD'] = os.environ.get('MYSQL_PASSWORD')
+app.config['MYSQL_DB'] = os.environ.get('MYSQL_DB')
 
 mysql = MySQL(app)
 
-# Configura tu clave secreta de Stripe
-stripe.api_key = 'sk_test_51PxqfrGhORxOWmL4L47gDb8R3Pe5lKjQ4MrfEuXUaobxjAObyMTo94vSJnRQ67aTDpnYmTQzGQl04YzQZryam17500S8nWfgcW'  # Reemplaza con tu clave secreta
+# Configuración de Stripe desde las variables de entorno
+stripe.api_key = os.environ.get('STRIPE_API_KEY')
 
 @app.route('/')
 def home():
