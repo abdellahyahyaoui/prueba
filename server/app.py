@@ -1,95 +1,59 @@
-from flask import Flask, jsonify, request
-from flask_mysqldb import MySQL
-from flask_cors import CORS
-import MySQLdb.cursors
-import stripe
-import os  # Importa el módulo os para leer las variables de entorno
+from flask import Flask, jsonify
+import psycopg2
+import os
+from dotenv import load_dotenv
+
+# Cargar variables de entorno desde el archivo .env
+load_dotenv()
 
 app = Flask(__name__)
 
-# Habilita CORS para permitir solicitudes desde otros dominios
-CORS(app)
-
-# Configuración de MySQL desde variables de entorno
-app.config['MYSQL_HOST'] = os.environ.get('MYSQL_HOST')
-app.config['MYSQL_USER'] = os.environ.get('MYSQL_USER')
-app.config['MYSQL_PASSWORD'] = os.environ.get('MYSQL_PASSWORD')
-app.config['MYSQL_DB'] = os.environ.get('MYSQL_DB')
-
-mysql = MySQL(app)
-
-# Configura tu clave secreta de Stripe desde una variable de entorno
-stripe.api_key = os.environ.get('STRIPE_API_KEY')
-
-@app.route('/')
-def home():
-    return jsonify({"message": "Bienvenido a la API de Ecommerce"})
-
 @app.route('/api/productos', methods=['GET'])
-def get_productos():
+def obtener_productos():
     try:
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT * FROM productos')
-        productos = cursor.fetchall()
-        cursor.close()
-        return jsonify(productos)
+        # Conectar a la base de datos utilizando la variable de entorno DATABASE_URL
+        conn = psycopg2.connect(os.getenv("DATABASE_URL"))
+        cur = conn.cursor()
+
+        # Consultar la tabla
+        cur.execute("""
+            SELECT 
+                id, 
+                product_name AS title, 
+                description, 
+                category, 
+                image_url AS image, 
+                is_available AS isNew, 
+                original_price AS oldPrice, 
+                sale_price AS price 
+            FROM ecommerce_products;
+        """)
+        
+        rows = cur.fetchall()
+
+        products = []
+        for row in rows:
+            product = {
+                "id": row[0],
+                "title": row[1],
+                "description": row[2],
+                "category": row[3],
+                "image": row[4],
+                "isNew": 1 if row[5] else 0,
+                "oldPrice": f"{row[6]:.2f}",
+                "price": f"{row[7]:.2f}",
+                "calificacion": None
+            }
+            products.append(product)
+
+        cur.close()
+        conn.close()
+
+        return jsonify(products)
+
     except Exception as e:
+        print(f"Error: {e}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/productos', methods=['POST'])
-def add_productos():
-    try:
-        datos = request.get_json()
-        
-        cursor = mysql.connection.cursor()
-        for producto in datos:
-            cursor.execute('''INSERT INTO productos (_id, title, isNew, oldPrice, price, description, category, image, rating) 
-                              VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)''', 
-                           (producto['_id'], producto['title'], producto['isNew'], producto['oldPrice'], 
-                            producto['price'], producto['description'], producto['category'], 
-                            producto['image'], producto['rating']))
-        
-        mysql.connection.commit()
-        cursor.close()
-        
-        return jsonify({'mensaje': 'Productos añadidos exitosamente.'}), 201
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/pay', methods=['POST'])
-def create_checkout_session():
-    try:
-        data = request.get_json()
-        items = data['items']  # Los items deberían tener id y cantidad
-        email = data['email']
-        
-        # Crear la sesión de checkout en Stripe
-        line_items = []
-        for item in items:
-            line_items.append({
-                'price_data': {
-                    'currency': 'eur',  # Cambia a tu moneda
-                    'product_data': {
-                        'name': item['title'],
-                        'images': [item['image']],
-                    },
-                    'unit_amount': int(item['price'] * 100),  # Precio en centavos
-                },
-                'quantity': item['quantity'],
-            })
-
-        session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=line_items,
-            mode='payment',
-            success_url='http://localhost:3000/success?session_id={CHECKOUT_SESSION_ID}',  # Cambia esto a tu URL de éxito
-            cancel_url='http://localhost:3000/cancel',  # Cambia esto a tu URL de cancelación
-            customer_email=email,
-        )
-
-        return jsonify({'id': session.id})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     app.run(debug=True)
