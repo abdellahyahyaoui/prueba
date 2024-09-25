@@ -1,112 +1,95 @@
-import os
 from flask import Flask, jsonify, request
-from flask_sqlalchemy import SQLAlchemy
-from dotenv import load_dotenv
-
-# Cargar las variables de entorno desde el archivo .env
-load_dotenv()
+from flask_mysqldb import MySQL
+from flask_cors import CORS
+import MySQLdb.cursors
+import stripe
+import os  # Importa el módulo os para leer las variables de entorno
 
 app = Flask(__name__)
 
-# Configura la conexión a la base de datos
-app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@{os.getenv('POSTGRES_HOST')}/{os.getenv('POSTGRES_DB')}"
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
+# Habilita CORS para permitir solicitudes desde otros dominios
+CORS(app)
 
-# Modelo para la tabla ecommerce_products
-class Product(db.Model):
-    __tablename__ = 'ecommerce_products'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    product_name = db.Column(db.String(255), nullable=False)
-    description = db.Column(db.Text, nullable=True)
-    category = db.Column(db.String(50), nullable=True)
-    image_url = db.Column(db.String(255), nullable=True)
-    is_available = db.Column(db.Boolean, default=True)
-    original_price = db.Column(db.Numeric(10, 2), nullable=False)
-    sale_price = db.Column(db.Numeric(10, 2), nullable=False)
+# Configuración de MySQL desde variables de entorno
+app.config['MYSQL_HOST'] = os.environ.get('MYSQL_HOST')
+app.config['MYSQL_USER'] = os.environ.get('MYSQL_USER')
+app.config['MYSQL_PASSWORD'] = os.environ.get('MYSQL_PASSWORD')
+app.config['MYSQL_DB'] = os.environ.get('MYSQL_DB')
 
-# Ruta para obtener todos los productos
-@app.route('/api/products', methods=['GET'])
-def get_products():
+mysql = MySQL(app)
+
+# Configura tu clave secreta de Stripe desde una variable de entorno
+stripe.api_key = os.environ.get('STRIPE_API_KEY')
+
+@app.route('/')
+def home():
+    return jsonify({"message": "Bienvenido a la API de Ecommerce"})
+
+@app.route('/api/productos', methods=['GET'])
+def get_productos():
     try:
-        products = Product.query.all()
-        return jsonify([{
-            'id': product.id,
-            'product_name': product.product_name,
-            'description': product.description,
-            'category': product.category,
-            'image_url': product.image_url,
-            'is_available': product.is_available,
-            'original_price': str(product.original_price),
-            'sale_price': str(product.sale_price)
-        } for product in products])
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT * FROM productos')
+        productos = cursor.fetchall()
+        cursor.close()
+        return jsonify(productos)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
-# Ruta para obtener un producto específico por ID
-@app.route('/api/products/<int:id>', methods=['GET'])
-def get_product(id):
-    product = Product.query.get(id)
-    if product:
-        return jsonify({
-            'id': product.id,
-            'product_name': product.product_name,
-            'description': product.description,
-            'category': product.category,
-            'image_url': product.image_url,
-            'is_available': product.is_available,
-            'original_price': str(product.original_price),
-            'sale_price': str(product.sale_price)
-        })
-    return jsonify({'message': 'Product not found'}), 404
-
-# Ruta para crear un nuevo producto
-@app.route('/api/products', methods=['POST'])
-def create_product():
-    data = request.get_json()
-    new_product = Product(
-        product_name=data['product_name'],
-        description=data.get('description'),
-        category=data.get('category'),
-        image_url=data.get('image_url'),
-        is_available=data.get('is_available', True),
-        original_price=data['original_price'],
-        sale_price=data['sale_price']
-    )
-    db.session.add(new_product)
-    db.session.commit()
-    return jsonify({'message': 'Product created', 'id': new_product.id}), 201
-
-# Ruta para actualizar un producto
-@app.route('/api/products/<int:id>', methods=['PUT'])
-def update_product(id):
-    data = request.get_json()
-    product = Product.query.get(id)
-    if product:
-        product.product_name = data.get('product_name', product.product_name)
-        product.description = data.get('description', product.description)
-        product.category = data.get('category', product.category)
-        product.image_url = data.get('image_url', product.image_url)
-        product.is_available = data.get('is_available', product.is_available)
-        product.original_price = data.get('original_price', product.original_price)
-        product.sale_price = data.get('sale_price', product.sale_price)
+@app.route('/api/productos', methods=['POST'])
+def add_productos():
+    try:
+        datos = request.get_json()
         
-        db.session.commit()
-        return jsonify({'message': 'Product updated'})
-    return jsonify({'message': 'Product not found'}), 404
+        cursor = mysql.connection.cursor()
+        for producto in datos:
+            cursor.execute('''INSERT INTO productos (_id, title, isNew, oldPrice, price, description, category, image, rating) 
+                              VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)''', 
+                           (producto['_id'], producto['title'], producto['isNew'], producto['oldPrice'], 
+                            producto['price'], producto['description'], producto['category'], 
+                            producto['image'], producto['rating']))
+        
+        mysql.connection.commit()
+        cursor.close()
+        
+        return jsonify({'mensaje': 'Productos añadidos exitosamente.'}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-# Ruta para eliminar un producto
-@app.route('/api/products/<int:id>', methods=['DELETE'])
-def delete_product(id):
-    product = Product.query.get(id)
-    if product:
-        db.session.delete(product)
-        db.session.commit()
-        return jsonify({'message': 'Product deleted'})
-    return jsonify({'message': 'Product not found'}), 404
+@app.route('/api/pay', methods=['POST'])
+def create_checkout_session():
+    try:
+        data = request.get_json()
+        items = data['items']  # Los items deberían tener id y cantidad
+        email = data['email']
+        
+        # Crear la sesión de checkout en Stripe
+        line_items = []
+        for item in items:
+            line_items.append({
+                'price_data': {
+                    'currency': 'eur',  # Cambia a tu moneda
+                    'product_data': {
+                        'name': item['title'],
+                        'images': [item['image']],
+                    },
+                    'unit_amount': int(item['price'] * 100),  # Precio en centavos
+                },
+                'quantity': item['quantity'],
+            })
 
-if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()  # Crea las tablas si no existen
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=line_items,
+            mode='payment',
+            success_url='http://localhost:3000/success?session_id={CHECKOUT_SESSION_ID}',  # Cambia esto a tu URL de éxito
+            cancel_url='http://localhost:3000/cancel',  # Cambia esto a tu URL de cancelación
+            customer_email=email,
+        )
+
+        return jsonify({'id': session.id})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == "__main__":
     app.run(debug=True)
