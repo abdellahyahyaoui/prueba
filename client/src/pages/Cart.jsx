@@ -24,20 +24,20 @@ const Cart = () => {
 
   const handleCheckout = async () => {
     const stripe = await stripePromise;
-
+  
     try {
-      const response = await axios.post("http://localhost:5000/api/pay", {
-        items: productData,
-        email: userInfo.email,
+      const response = await axios.post("https://prueba-1-1qb5.onrender.com/api/pay", {
+        items: productData, // Asegúrate de que `productData` tenga la estructura correcta
+        email: userInfo.email, // Asegúrate de que `userInfo.email` esté definido
       });
-
-      const checkoutSession = response.data; // Accediendo a response.data
-
+  
+      const checkoutSession = response.data;
+  
       // Redirigir al usuario a Stripe Checkout
       const result = await stripe.redirectToCheckout({
         sessionId: checkoutSession.id,
       });
-
+  
       if (result.error) {
         alert(result.error.message);
       }
