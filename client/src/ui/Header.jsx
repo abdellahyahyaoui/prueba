@@ -10,16 +10,12 @@ const navigation = [
     link: "/",
   },
   {
-    title: "shop",
-    link: "/shop",
+    title: "About",
+    link: "/about", // Cambia este enlace para que apunte a la ruta /about
   },
   {
     title: "Offers",
-    link: "/offers",
-  },
-  {
-    title: "Blog",
-    link: "/blog",
+    link: "/offers", // Asegúrate de que esta ruta sea correcta si es necesaria
   },
   {
     title: "Contact",

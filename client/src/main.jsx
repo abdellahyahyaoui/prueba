@@ -20,6 +20,9 @@ import Login from "./pages/Login.jsx";
 import "react-toastify/dist/ReactToastify.css";
 import Product from "./pages/Product.jsx";
 import Success from "./pages/Success.jsx";
+import About from "./pages/About.jsx"; // Importa el componente About
+import Contact from "./pages/Contact.jsx"; // Asegúrate de que esta línea esté presente
+
 import { app } from "./firebase.config.js"; // Asegúrate de que este import esté correcto.
 
 const RootLayout = () => {
@@ -42,6 +45,14 @@ const router = createBrowserRouter([
         path: "/",
         element: <App />,
         loader: getProducts,
+      },
+      {
+        path: "/about", // Nueva ruta para About
+        element: <About />,
+      },
+      {
+        path: "/contact", // Nueva ruta para Contact
+        element: <Contact />,
       },
       {
         path: "/product/:id",
@@ -68,7 +79,7 @@ const router = createBrowserRouter([
 ]);
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <Provider store={store}> {/* Aquí quitamos app={app} */}
+  <Provider store={store}>
     <PersistGate loading={"loading"} persistor={persistor}>
       <RouterProvider router={router} />
     </PersistGate>
