@@ -15,7 +15,7 @@ const Cart = () => {
     return <Navigate to="/login" />;
   }
 
-  const stripePromise = loadStripe('pk_test_51PxqfrGhORxOWmL4L9y06T3acVevHuTlW20uiM8fmSjhKSJcLam3Dk557IGJd6ctLbe14FtE6hfnjfs5bONBY4k800liEXcYUV');
+  const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
   useEffect(() => {
     const price = productData.reduce((acc, item) => acc + item.price * item.quantity, 0);
