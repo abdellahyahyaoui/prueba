@@ -1,0 +1,20 @@
+
+@startuml
+
+actor Usuario
+participant "Flask App" as Flask
+participant "PostgreSQL" as DB
+participant "Stripe API" as Stripe
+
+Usuario -> Flask: Solicita productos (/api/productos)
+Flask -> DB: SELECT * FROM ecommerce_products
+DB --> Flask: Devuelve lista de productos
+Flask --> Usuario: Devuelve JSON con productos
+
+Usuario -> Flask: Realiza pago (/api/pay)
+Flask -> Stripe: Crea sesión de pago
+Stripe --> Flask: Devuelve sesión de pago
+Flask --> Usuario: Devuelve ID de sesión de pago
+@enduml
+
+

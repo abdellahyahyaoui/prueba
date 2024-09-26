@@ -1,0 +1,16 @@
+@startuml
+
+actor Usuario
+participant "Frontend (React)" as Frontend
+participant "Backend (Flask)" as Backend
+
+Usuario -> Frontend: Solicita la página principal
+Frontend -> Backend: GET /api/productos
+Backend -> Frontend: Devuelve lista de productos
+Frontend -> Usuario: Muestra productos
+
+Usuario -> Frontend: Añade producto al carrito
+Frontend -> Backend: Envía datos del carrito
+Backend -> Frontend: Confirma producto añadido
+Frontend -> Usuario: Muestra carrito actualizado
+@enduml

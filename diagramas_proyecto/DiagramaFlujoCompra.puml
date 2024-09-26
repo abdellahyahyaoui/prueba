@@ -1,0 +1,19 @@
+@startuml
+
+start
+:Usuario visita la tienda;
+:Usuario selecciona un producto;
+:Usuario añade el producto al carrito;
+:Usuario revisa el carrito;
+:Usuario procede al pago;
+:Usuario introduce información de pago;
+:Flask procesa el pago;
+if (¿Pago exitoso?) then (sí)
+  :Flask confirma el pago;
+  :Usuario recibe confirmación;
+else (no)
+  :Flask devuelve error;
+  :Usuario recibe mensaje de error;
+endif
+stop
+@enduml

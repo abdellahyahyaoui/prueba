@@ -1,0 +1,19 @@
+@startuml
+
+actor Usuario
+participant "React App" as React
+participant "Redux Store" as Redux
+participant "Firebase" as Firebase
+participant "API" as API
+
+Usuario -> React: Carga página principal
+React -> API: GET /api/productos
+API --> React: Devuelve lista de productos
+React -> Redux: Almacena productos en el estado
+React -> Usuario: Muestra productos
+
+Usuario -> React: Realiza pago
+React -> API: POST /api/pay
+API --> React: Devuelve ID de sesión de pago
+React -> Usuario: Redirige a la sesión de pago
+@enduml
