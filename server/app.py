@@ -16,6 +16,18 @@ stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 def hello_world():
     return "Hello World!"
 
+# Nueva ruta para obtener los productos
+@app.route("/productos", methods=["GET"])
+def get_productos():
+    productos = [
+        {"id": 1, "nombre": "Producto 1", "precio": 100},
+        {"id": 2, "nombre": "Producto 2", "precio": 200},
+        {"id": 3, "nombre": "Producto 3", "precio": 300},
+        {"id": 4, "nombre": "Producto 4", "precio": 400},
+        {"id": 5, "nombre": "Producto 5", "precio": 500},
+    ]
+    return jsonify(productos)
+
 @app.route("/pay", methods=["POST"])
 def pay():
     try:

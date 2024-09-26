@@ -40,7 +40,7 @@ const Footer = () => {
       <div className="max-w-screen-xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 px-4 gap-4">
         <div className="flex flex-col gap-7">
           <img className="w-32" src={logoLight} alt="logoLight" />
-          <p className="text-white text-sm tracking-wide">© ReactBD.com</p>
+          <p className="text-white text-sm tracking-wide">© DevCamp abdellah yahyaoui</p>
           <img className="w-56" src={paymentLogo} alt="paymentLogo" />
 
           <SocialLinks />
@@ -48,10 +48,10 @@ const Footer = () => {
         <div>
           <h2 className="text-2xl font-semibold text-white mb-4">Locate us</h2>
           <div className="text-base flex flex-col gap-2">
-            <p>13th Street, New York</p>
-            <p>Mobile: +100 12356758</p>
-            <p>Phone: +100 20155566</p>
-            <p>e-mail: bazar@gmail.com</p>
+            <p>avenida free palestiana</p>
+            <p>Mobile: 611 611 611</p>
+            <p>Phone: 944 444 444</p>
+            <p>e-mail: freepalestina@gmail.com</p>
           </div>
         </div>
         <div>
