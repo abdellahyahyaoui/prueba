@@ -1,31 +1,78 @@
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
+from flask import Flask, jsonify
+from flask_cors import CORS  # Importar CORS
+import psycopg2
+import os
+from dotenv import load_dotenv
+
+# Cargar las variables de entorno desde el archivo .env
+load_dotenv()
 
 app = Flask(__name__)
 
-# Configuración de la base de datos PostgreSQL
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://ecommerce_ikfq_user:Tdkv6RKytsf5d1pACeRJicF8tG2Ec2ON@dpg-crq0213v2p9s738di0j0-a.frankfurt-postgres.render.com/ecommerce_ikfq'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# Configura CORS para permitir tu frontend
+CORS(app, resources={r"/api/*": {"origins": "https://prueba-5a9a3.web.app"}})  # Ajusta esto si es necesario
 
-db = SQLAlchemy(app)
+# Configura tus credenciales de la base de datos usando variables de entorno
+DB_HOST = os.getenv('DB_HOST')
+DB_PORT = os.getenv('DB_PORT')
+DB_NAME = os.getenv('DB_NAME')
+DB_USER = os.getenv('DB_USER')
+DB_PASSWORD = os.getenv('DB_PASSWORD')
 
-class Product(db.Model):
-    __tablename__ = 'ecommerce_products'
+def get_db_connection():
+    try:
+        conn = psycopg2.connect(
+            host=DB_HOST,
+            port=DB_PORT,
+            dbname=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD
+        )
+        return conn
+    except Exception as e:
+        print(f"Error connecting to database: {str(e)}")
+        return None
 
-    id = db.Column(db.Integer, primary_key=True)
-    product_name = db.Column(db.String)
-    description = db.Column(db.String)
-    category = db.Column(db.String)
-    image_url = db.Column(db.String)
-    is_available = db.Column(db.Boolean)
-    original_price = db.Column(db.Numeric)
-    sale_price = db.Column(db.Numeric)
-    discount = db.Column(db.Numeric)
+@app.route('/api/productos', methods=['GET'])
+def get_products_api():
+    return fetch_products()
 
-@app.route('/products')
-def get_products():
-    products = Product.query.all()
-    return {'products': [{'id': product.id, 'name': product.product_name} for product in products]}
+def fetch_products():
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"error": "Database connection failed"}), 500
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM ecommerce_products;')
+        rows = cursor.fetchall()
+
+        products = []
+        for row in rows:
+            product = {
+                "_id": row[0],  # id
+                "title": row[1],  # product_name
+                "description": row[2],  # description
+                "category": row[3],  # category
+                "image": row[4],  # image_url
+                "isAvailable": row[5],  # is_available
+                "oldPrice": str(row[6]),  # original_price como string
+                "price": float(row[7]),  # sale_price
+                "discount": float(row[8]) if row[8] is not None else None,  # discount
+                "rating": 0  # Puedes establecer una lógica para la calificación si es necesario
+            }
+            products.append(product)
+
+        cursor.close()
+        conn.close()
+
+        return jsonify(products)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if conn:
+            conn.close()
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(port=int(os.getenv('PORT')), debug=True)

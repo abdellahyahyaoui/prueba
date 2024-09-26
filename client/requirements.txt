@@ -34,7 +34,6 @@ MarkupSafe==2.1.5
 mysql-connector-python==9.0.0
 mysqlclient==2.2.4
 packaging==24.1
-psycopg2==2.9.9
 psycopg2-binary==2.9.9
 pycryptodomex==3.20.0
 pydantic==2.9.0
@@ -54,5 +53,4 @@ tqdm==4.66.5
 typing_extensions==4.12.2
 tzdata==2024.1
 urllib3==2.2.2
-waitress==2.1.2
 Werkzeug==3.0.4

@@ -1,12 +1,14 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS  # Importar CORS
 import psycopg2
 import os
+import stripe
 from dotenv import load_dotenv
 
 # Cargar las variables de entorno desde el archivo .env
 load_dotenv()
 
+# Inicializar Flask
 app = Flask(__name__)
 
 # Configura CORS para permitir tu frontend
@@ -18,6 +20,9 @@ DB_PORT = os.getenv('DB_PORT')
 DB_NAME = os.getenv('DB_NAME')
 DB_USER = os.getenv('DB_USER')
 DB_PASSWORD = os.getenv('DB_PASSWORD')
+
+# Configura la clave secreta de Stripe
+stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 
 def get_db_connection():
     try:
@@ -73,6 +78,43 @@ def fetch_products():
     finally:
         if conn:
             conn.close()
+
+@app.route('/api/pay', methods=['POST'])
+def pay():
+    try:
+        data = request.json
+        items = data['items']
+        email = data['email']
+
+        # Crear una sesión de Stripe Checkout
+        line_items = []
+        for item in items:
+            line_items.append({
+                'price_data': {
+                    'currency': 'usd',  # Cambia la moneda según sea necesario
+                    'product_data': {
+                        'name': item['title'],
+                        'images': [item['image']],
+                    },
+                    'unit_amount': int(item['price'] * 100),  # El precio debe estar en centavos
+                },
+                'quantity': item['quantity'],
+            })
+
+        # Crear la sesión de Stripe Checkout
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=line_items,
+            mode='payment',
+            success_url='https://tu-frontend-url/success',  # Cambia esto a la URL de éxito de tu frontend
+            cancel_url='https://tu-frontend-url/cancel',    # Cambia esto a la URL de cancelación de tu frontend
+            customer_email=email,
+        )
+
+        return jsonify({'id': checkout_session.id})
+
+    except Exception as e:
+        return jsonify(error=str(e)), 500
 
 if __name__ == '__main__':
     app.run(port=int(os.getenv('PORT')), debug=True)
