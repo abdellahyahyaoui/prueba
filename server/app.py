@@ -1,4 +1,5 @@
 from flask import Flask, jsonify
+from flask_cors import CORS  # Importar CORS
 import psycopg2
 import os
 from dotenv import load_dotenv
@@ -7,6 +8,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
+
+# Configura CORS para permitir tu frontend
+CORS(app, resources={r"/api/*": {"origins": "https://prueba-5a9a3.web.app"}})  # Ajusta esto si es necesario
 
 # Configura tus credenciales de la base de datos usando variables de entorno
 DB_HOST = os.getenv('DB_HOST')
